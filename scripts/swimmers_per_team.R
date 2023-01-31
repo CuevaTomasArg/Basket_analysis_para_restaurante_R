@@ -23,3 +23,4 @@ ggplot(data =swimmers,mapping = aes(x =as.factor(Team.Code),y = Amount.Swimmers)
 
 
 #full swimmers in the ranking END
+

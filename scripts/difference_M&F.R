@@ -43,3 +43,4 @@ ggplot(genders,aes(x = `Team.Code`,
            width = 0.5,fill = "pink")+
   coord_flip()
   #Agregar la parte de scala  continuidad de "https://juvenalcampos.com/2020/01/26/visualizando-pir%C3%A1mides-de-poblaci%C3%B3n-en-r/"
+

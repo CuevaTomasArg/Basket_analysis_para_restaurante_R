@@ -58,4 +58,8 @@ Cada cosa tiene que estar explicada, en si, cada linea de codigo la voy a tener 
 
 6to -> Crear un arbol de regresión en donde pueda predesir, si es de un equipo, entonces es probable que esté en el ranking.
 
-7mo -> Unir el ranking de hombres y mujeres, cambiar el ranking de 200 por ranking de 400 por cada carrera.
+7mo -> Unir el ranking de hombres y mujeres, cambiar el ranking de 200 por ranking de 400 por cada carrera. 
+
+IDEA: Utilizando el forloop puesdo hacer este ranking de los 400 nadadores y hacer para cada prueba una tabla dinamica. Haciendo una lista de dataframes, luego hacer un loop en donde por cada elemento de la lista genere una tabla dinamica
+
+8vo -> Crear el markdownm. osae el README.m, para que la profe pueda hacer la clonación de git.

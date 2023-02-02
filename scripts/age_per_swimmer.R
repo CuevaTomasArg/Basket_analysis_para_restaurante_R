@@ -2,7 +2,22 @@ library(tidyverse)
 library(dplyr)
 library(ggplot2)
 
-data <- read.csv("../data/best_swimmers.csv",sep = ",")
+
+mean_age <- function(data,G){
+  new_df <- data %>% 
+    select(Athlete.Full.Name, Age.to.swim, Gender) %>%
+    unique() %>% 
+    filter(Gender == G) %>% 
+    group_by(Age.to.swim) %>% 
+    summarise(
+      Amount.Swimmers = sum(Age.to.swim/Age.to.swim)
+    ) %>% 
+    arrange(desc(Amount.Swimmers))
+    
+  return(new_df)
+}
+
+data <- read.csv("./data/best_swimmers.csv",sep = ",")
 
 
 data <- data %>% 
@@ -15,16 +30,15 @@ data <- data %>%
   )
 
 
-data <- data %>% 
-  select(Athlete.Full.Name, Age.to.swim) %>%
-  unique() %>% 
-  group_by(Age.to.swim) %>% 
-  summarise(
-    Amount.Swimmers = sum(Age.to.swim/Age.to.swim)
-  ) %>% 
-  arrange(desc(Amount.Swimmers))
+female_data_age <- mean_age(data,"F")
+  
+  
+male_data_age <- mean_age(data,"M")
 
-
-glimpse(data)
-
-view(data)
+ggplot(
+  data =female_data_age,
+  mapping = aes(
+    x =Age.to.swim,
+    y = Amount.Swimmers)
+) +
+  geom_bar( stat = "identity")

@@ -1,0 +1,195 @@
+---
+title: "Ranking 200 mejores nadadores por prueba"
+author: "Cueva Tomas"
+date: "2023-01-12"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(scipen = 999)
+```
+
+# Análisis exploratorio del ranking de los 200 nadadores más rapidos por prueba
+
+Bienvenidos a este Rmarkdown en donde analizaremos el dataset que comprende a los 200 nadadores más rapidos por cada prueba, este ranking se desarrola a partir de los mejores tiempos realizados en cada evento internacional realizado en albercas de 50 metros. Con este conjunto de datos vamos a analizar:
+
+-   **La cantidad de nadadores por equipo/país** para examinar en donde se concentra la mejor escuela de nadadores a nivel profesional
+-   La edad promedio en donde los nadadores consiguen su rendimiento más alto
+-   La diferencia competitiva entre hombres y mujeres a nivel profesional
+-   Realizaremos un arbol de regresión y clasificación CART para poder predecir la entrada de un nuevo nadador a este ranking 200 de acuerdo a ciertas variables que encontraremos en este dataset.
+
+## Inicialización de entorno
+
+En principio debemos instalar y llamar a las librerias que utilizaremos.
+
+```{r pressure, echo=TRUE, message=FALSE,warning=FALSE,error=FALSE}
+install.packages("e1071")
+install.packages("caTools")
+install.packages("class")
+install.packages("ggplot2")
+install.packages("DT")
+install.packages("tidymodels")
+install.packages("rpart.plot")
+install.packages("tidyverse")
+install.packages("dplyr")
+```
+
+```{r call, echo=TRUE,message=FALSE,warning=FALSE}
+library(tidyverse)
+library(dplyr)
+library(e1071)
+library(caTools)
+library(class)
+library(ggplot2)
+library(DT)
+library(tidymodels)
+library(rpart.plot)
+library(stringr)
+```
+
+## Preparamos nuestras funciones
+
+```{r functions, echo=TRUE}
+data_description <- function(data){
+  na <- sum(is.na(data))
+  if(na == 0){
+    description <- "El dataframe no tiene valores na."
+  }else{
+    decription <- "El dataframe SI TIENE valores na."
+  }
+  
+  description <-cat(description ,"\n", "Contiene " , nrow(data), " filas y ",ncol(data), " columnas","\n","Con las siguientes variables: ",names(data)) 
+  
+  return(description)
+}
+
+mean_age <- function(data,G){
+  new_df <- data %>% 
+    select(Athlete.Full.Name, Age.to.swim, Gender) %>%
+    unique() %>% 
+    filter(Gender == G) %>% 
+    group_by(Age.to.swim) %>% 
+    summarise(
+      Amount.Swimmers = sum(Age.to.swim/Age.to.swim)
+    ) %>% 
+    arrange(desc(Amount.Swimmers))
+  
+  ggplot(
+  data =new_df,
+  mapping = aes(
+    x =Age.to.swim,
+    y = Amount.Swimmers)
+) +
+  geom_bar( stat = "identity")
+  
+}
+```
+
+Finalmente, importaremos nuestro dataset a una variable.
+
+```{r import, echo=TRUE}
+data <- read.csv("../data/best_swimmers.csv", sep = ",")
+```
+
+## Descripción del dataset
+
+Describimos el dataset de manera sencilla para tener una vista general del mismo.
+
+```{r description, echo=TRUE}
+print(data_description(data))
+
+glimpse(data)
+```
+
+## Transformación general
+
+Ahora haremos la primer transformación, la cual comprende:
+
+-   Reescribir la variable data con el dataframe transformado
+
+-   Eliminar las columnas:
+
+    -   Swim.time: Ya que el tiempo de nado lo tendremos diferenciado en otras columnas.
+
+    -   Team.Code: Ya que nos da información ya repetida, proveniente de Team.name, la cual nos da un poco más de información.
+
+    -   index: Innecesaria ya que tenemos el ranking y el indice autogenerado.
+
+    -   Duration..hh.mm.ss.ff. : La eliminaremos ya que generaremos 4 columnas más que posean un tipo de dato apropiado para lo que necesitaremos posteriormente.
+
+    -   Aprovecharemos a dejar el dato de la "hora" en el tiempo de nado ya que en carreras en piscinas de 50 metros no existen carreras que requieran estar más de 30 minutos nadando.
+
+-   Para verificar que las fechas sean correctas, filtraremos todas aquellas que sobrepasen el 01-01-2023.
+
+```{r transform, echo=TRUE}
+data <- data %>% 
+  mutate(
+    Swim.time = NULL,
+    Event.Name = as.factor(Event.Name),
+    Event.description = as.factor(Event.description),
+    City = as.factor(City),
+    Country.Code = as.factor(Country.Code),
+    Swim.date = as.Date(Swim.date, "%m-%d-%y"),
+    Athlete.birth.date = as.Date(Athlete.birth.date,"%m-%d-%y"),
+    Team.Name = as.factor(Team.Name),
+    Team.Code = NULL,
+    Duration..hh.mm.ss.ff. = str_split(Duration..hh.mm.ss.ff. , ":", simplify = TRUE),
+    Minute =as.integer(Duration..hh.mm.ss.ff.[,2]),
+    Second = as.integer(Duration..hh.mm.ss.ff.[,3]),
+    hundredths = as.integer(Duration..hh.mm.ss.ff.[,4]),
+    Duration..hh.mm.ss.ff. = NULL,
+    index = NULL,
+    Gender = as.factor(Gender),
+    Age.to.swim = as.integer(trunc(as.numeric((`Swim.date`- `Athlete.birth.date`)/365)))
+  ) %>% 
+  filter(
+    Swim.date < as.Date("2023-01-01") & Athlete.birth.date < as.Date("2023-01-01")
+  )
+
+glimpse(data)
+```
+
+## Cantidad de nadadores por equipo
+
+Crearemos una tabla para visualizar la cantidad de nadadores por equipo. De esta forma podremos ver que país es aquel que posee el mejor nivel profesional.
+
+```{r table, echo=TRUE}
+data %>% 
+  select(Athlete.Full.Name,Team.Name) %>%
+  unique() %>% 
+  group_by(Team.Name) %>% 
+  transmute(
+    Team.Name = as.factor(Team.Name),
+    id.Team.Name = as.factor(Team.Name),
+    id.Team.Name = as.integer(id.Team.Name)
+  ) %>% 
+  summarise(
+    Amount.Swimmers = sum(id.Team.Name/id.Team.Name)
+  ) %>% 
+  arrange(desc(Amount.Swimmers)) %>% 
+  slice(1:10) %>% 
+  DT::datatable(
+    rownames = F,
+    filter = "top"
+  )
+
+```
+
+## Edad promedio de rendimiento
+
+Como es de amplio conocimiento,el organismo, por razones biologicas, tiene una etapa en donde consigue su mejor nivel fisico, en la natación profesional esto es muy notorio, ya que es un deporte de alto rendimiento y de alguna u otra forma, a medida que el atleta crece ya en una etapa adulta, su rendimiento empieza a decaer, como también es dificil comparar el nivel fisico de un adolescente con un adulto.
+
+```{r performance_age_male, echo=TRUE,message=FALSE}
+
+mean_age(data,"M")
+
+```
+
+```{r performance_age_female, echo=TRUE,message=FALSE}
+mean_age(data,"F")
+```
+
+Como podemos observar, la mejor etapa de rendimiento a nivel profesional en hombres, se encuentra entre los 20 a 25 años de edad. En la categoría femenina, la franja etaria se extiende solo un poco más, observando una cantidad considerable de nadadoras dentro del top 200 de cada prueba a la edad de 17 hasta los 26 años.
+
+## Diferencia entre hombres y mujeres

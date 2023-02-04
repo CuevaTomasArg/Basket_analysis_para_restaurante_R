@@ -63,21 +63,11 @@ glimpse(data)
 
 
 female_df <- gender_select(data,"F")
-View(female_df)
-
 male_df <- gender_select(data,"M")
-View(male_df)
 
 df_swimmers <- full_join(male_df,female_df)
-
-View(df_swimmers)
   
 displacement <- 10
-
-c(seq(-90,0,by = 10)-displacement, seq(0,90, by = 10) + displacement)
-
-c(rev(seq(0,90, by = 10)), seq(0,90, by = 10))
-
 ggplot(df_swimmers, aes(x = `Team.Name`,
                         y = `Amount.Swimmers`))+
   geom_linerange(data = subset(df_swimmers, Gender == "M") %>% 

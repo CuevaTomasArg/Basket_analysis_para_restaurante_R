@@ -24,15 +24,15 @@ Bienvenidos a este Rmarkdown en donde analizaremos el dataset que comprende a lo
 En principio debemos instalar y llamar a las librerias que utilizaremos.
 
 ```{r pressure, echo=TRUE, message=FALSE,warning=FALSE,error=FALSE}
-install.packages("e1071")
-install.packages("caTools")
-install.packages("class")
-install.packages("ggplot2")
-install.packages("DT")
-install.packages("tidymodels")
-install.packages("rpart.plot")
-install.packages("tidyverse")
-install.packages("dplyr")
+#install.packages("e1071")
+#install.packages("caTools")
+#install.packages("class")
+#install.packages("ggplot2")
+#install.packages("DT")
+#install.packages("tidymodels")
+#install.packages("rpart.plot")
+#install.packages("tidyverse")
+#install.packages("dplyr")
 ```
 
 ```{r call, echo=TRUE,message=FALSE,warning=FALSE}
@@ -83,6 +83,30 @@ mean_age <- function(data,G){
 ) +
   geom_bar( stat = "identity")
   
+}
+
+gender_select <- function(data,gender){
+  dataframe <- data %>% 
+    filter(Gender == gender) %>% 
+    select(Athlete.Full.Name,Team.Name,Gender) %>%
+    unique() %>% 
+    group_by(Team.Name) %>% 
+    transmute(
+      Team.Name = as.factor(Team.Name),
+      id.team.code = as.factor(Team.Name),
+      id.team.code = as.integer(id.team.code),
+    ) %>%
+    summarise(
+      Amount.Swimmers = sum(id.team.code/id.team.code)
+    ) %>% 
+    arrange(desc(Team.Name))
+  
+  dataframe <- dataframe %>% 
+    mutate(
+      Gender = gender
+    )
+  
+  return(dataframe)
 }
 ```
 
@@ -193,3 +217,49 @@ mean_age(data,"F")
 Como podemos observar, la mejor etapa de rendimiento a nivel profesional en hombres, se encuentra entre los 20 a 25 años de edad. En la categoría femenina, la franja etaria se extiende solo un poco más, observando una cantidad considerable de nadadoras dentro del top 200 de cada prueba a la edad de 17 hasta los 26 años.
 
 ## Diferencia entre hombres y mujeres
+
+En el siguiente grafico se muestra cantidad de hombres y mujeres en cada país perteneciente a este ranking 200.
+
+```{r competitiviti, echo=TRUE, message=FALSE,warning=FALSE}
+female_df <- gender_select(data,"F")
+male_df <- gender_select(data,"M")
+
+df_swimmers <- full_join(male_df,female_df)
+  
+displacement <- 10
+ggplot(df_swimmers, aes(x = `Team.Name`,
+                        y = `Amount.Swimmers`),
+       width = 800)+
+  geom_linerange(data = subset(df_swimmers, Gender == "M") %>% 
+                   mutate(`Amount.Swimmers` = -`Amount.Swimmers`),
+                 aes(ymin = -displacement,
+                     ymax = -displacement + `Amount.Swimmers`),
+                 size = 4,
+                 color = "blue")+
+  geom_linerange(data = subset(df_swimmers, Gender == "F"),
+                 aes(ymin = displacement,
+                     ymax = displacement + `Amount.Swimmers`),
+                 size = 5,
+                 color = "pink")+
+  coord_flip()+
+  scale_y_continuous(
+    breaks = c(seq(-90 ,0,by=10)-displacement,
+               seq(0,90,by = 10)+displacement),
+    labels = c(rev(seq(0,90, by = 10)), seq(0,90, by = 10))
+  )+
+  theme(plot.title = element_text(hjust = .5),
+        axis.ticks = element_blank(),
+        axis.text.y = element_blank(),
+        )+
+  geom_label(aes(x = `Team.Name`,
+                 y = 0,
+                 label = `Team.Name`),
+             label.padding = unit(0.0,"lines"),
+             label.size = 0,
+             size = 1.75,
+             label.r = unit(0.0,"lines"),
+             fill = "#FAFAFA",
+             alpha = 0.2,
+             color = "#5D646F")
+
+```

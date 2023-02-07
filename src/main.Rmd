@@ -10,41 +10,31 @@ knitr::opts_chunk$set(echo = TRUE)
 options(scipen = 999)
 ```
 
-# Análisis exploratorio del ranking de los 200 nadadores más rapidos por prueba
+# Análisis explorato4 por prueba
 
-Bienvenidos a este Rmarkdown en donde analizaremos el dataset que comprende a los 200 nadadores más rapidos por cada prueba, este ranking se desarrola a partir de los mejores tiempos realizados en cada evento internacional realizado en albercas de 50 metros. Con este conjunto de datos vamos a analizar:
+Bienvenidos a este Rmarkdown en donde analizaremos el dataset que comprende a los 200 nadadores más rapidos por cada prueba, este ranking se desarrola a partir de los mejores tiempos realizados en cada evento profesional realizado en albercas de 50 metros. Con este conjunto de datos vamos a analizar:
 
--   **La cantidad de nadadores por equipo/país** para examinar en donde se concentra la mejor escuela de nadadores a nivel profesional
--   La edad promedio en donde los nadadores consiguen su rendimiento más alto
--   La diferencia competitiva entre hombres y mujeres a nivel profesional
--   Realizaremos un arbol de regresión y clasificación CART para poder predecir la entrada de un nuevo nadador a este ranking 200 de acuerdo a ciertas variables que encontraremos en este dataset.
+-   **La cantidad de nadadores por equipo/país** para examinar en donde se concentra la mejor escuela de nadadores a nivel profesional.
+-   La edad promedio en donde los nadadores consiguen su rendimiento más alto.
+-   La diferencia competitiva entre hombres y mujeres a nivel profesional.
+-   El evento con lás mejores marcas.
 
 ## Inicialización de entorno
 
 En principio debemos instalar y llamar a las librerias que utilizaremos.
 
 ```{r pressure, echo=TRUE, message=FALSE,warning=FALSE,error=FALSE}
-#install.packages("e1071")
-#install.packages("caTools")
-#install.packages("class")
-#install.packages("ggplot2")
-#install.packages("DT")
-#install.packages("tidymodels")
-#install.packages("rpart.plot")
-#install.packages("tidyverse")
-#install.packages("dplyr")
+install.packages("ggplot2")
+install.packages("DT")
+install.packages("tidyverse")
+install.packages("dplyr")
 ```
 
 ```{r call, echo=TRUE,message=FALSE,warning=FALSE}
 library(tidyverse)
 library(dplyr)
-library(e1071)
-library(caTools)
-library(class)
 library(ggplot2)
 library(DT)
-library(tidymodels)
-library(rpart.plot)
 library(stringr)
 ```
 
@@ -57,6 +47,8 @@ data_description <- function(data){
     description <- "El dataframe no tiene valores na."
   }else{
     decription <- "El dataframe SI TIENE valores na."
+    na.omit(data)
+    print("se eliminarion "+ na + " valores NA")
   }
   
   description <-cat(description ,"\n", "Contiene " , nrow(data), " filas y ",ncol(data), " columnas","\n","Con las siguientes variables: ",names(data)) 
@@ -169,7 +161,8 @@ data <- data %>%
   ) %>% 
   filter(
     Swim.date < as.Date("2023-01-01") & Athlete.birth.date < as.Date("2023-01-01")
-  )
+  ) %>% 
+  arrange(desc(Event.description))
 
 glimpse(data)
 ```
@@ -192,7 +185,7 @@ data %>%
     Amount.Swimmers = sum(id.Team.Name/id.Team.Name)
   ) %>% 
   arrange(desc(Amount.Swimmers)) %>% 
-  slice(1:10) %>% 
+  slice(1:100) %>% 
   DT::datatable(
     rownames = F,
     filter = "top"
@@ -262,4 +255,25 @@ ggplot(df_swimmers, aes(x = `Team.Name`,
              alpha = 0.2,
              color = "#5D646F")
 
+```
+
+## Evento con las mejores marcas
+
+```{r event,echo=TRUE}
+data %>% 
+  select(Event.Name) %>%
+  group_by(Event.Name) %>% 
+  transmute(
+    Event.Name = Event.Name,
+    id.Event.Name = as.integer(Event.Name),
+  ) %>% 
+  summarise(
+    Count = sum(id.Event.Name/id.Event.Name)
+  ) %>% 
+  arrange(desc(Event.Name)) %>% 
+  slice(1:500) %>% 
+  DT::datatable(
+    rownames = F,
+    filter = "top"
+  )
 ```

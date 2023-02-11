@@ -5,9 +5,12 @@ library(dplyr)
 library(lubridate)
 library(ggplot2)
 library(gridExtra)
-
+library(stringr)
 # Load the data set
-data_inicial <- read.csv("Groceries_dataset.csv", sep = ',') # para ggplot
+data_inicial <- read.csv("notes_&_examples/Groceries_dataset.csv", sep = ',') # para ggplot
+
+View(data_inicial)
+
 
 data_inicial <- data_inicial %>% 
   mutate(
@@ -27,6 +30,7 @@ data_csv$Date <- NULL
 data_csv$itemDescription <- NULL
 data_csv$itemList <- as.character(data_csv$itemList)
 
+View(data_csv)
 # Escribo data transaccional
 write.csv(data_csv, "ItemList.csv", quote = FALSE, row.names = TRUE)
 
@@ -39,9 +43,11 @@ transacciones <- read.transactions(
   sep = ",", 
   cols = 1
   )
+View(transacciones)
 
 # Quito Quotes
 transacciones@itemInfo$labels <- gsub("\"","",transacciones@itemInfo$labels)
+View(transacciones@itemInfo$labels)
 
 # 2. Grafico de frecuencia de items
 # Create an item absolute frequency plot for the top 20 items
@@ -263,6 +269,7 @@ grid.arrange(plot1, plot2, plot3, plot4, ncol = 2)
 
 # Data frame
 num_rules <- data.frame(rules_sup10, rules_sup5, rules_sup1, rules_sup0.5, confidenceLevels)
+View(num_rules)
 
 ggplot(data = num_rules, aes(x = confidenceLevels)) +
   geom_line(aes(y = rules_sup10, colour = "Nivel de Soporte: 10%")) + 

@@ -4,9 +4,6 @@ library(stringr)
 
 data <- read.csv("scripts/Pizzas/PizzaData.csv",sep = ",")
 
-glimpse(data)
-View(data)
-
 data <- data %>% 
   select(order_date,total_price) %>% 
   mutate(
@@ -20,8 +17,12 @@ data <- data %>%
     month = c("January","February","March","April","May","June","July","August","September","October","November","December")
   )
 
-glimpse(data)
-
-View(data)
 
 barplot(height = data$`sum(total_price)`,names= data$month)
+
+
+data %>% 
+  tail(10) %>% 
+  ggplot(aes(x = month, y = `sum(total_price)`, group = 1))+
+  geom_line()+
+  geom_point()

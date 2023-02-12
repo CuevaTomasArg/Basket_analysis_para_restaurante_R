@@ -125,6 +125,22 @@ rules_sup1 <- integer(length = 10)
 rules_sup0.5 <- integer(length = 10)
 rules_sup0.1 <- integer(length = 10)
 
+Apriori_algorithm <- function(rules,confidence_levels,transactions,support_levels,n){
+  for (i in 1:length(confidenceLevels)) {
+    rules[i] <- length(
+      apriori(
+        transactions, 
+        parameter = list(
+          minlen = 1,
+          sup = support_levels[n],
+          conf = confidence_levels[i],
+          target = "rules"
+        )
+      )
+    )
+  }
+}
+
 # Apriori algorithm with a support level of 10%
 for (i in 1:length(confidenceLevels)) {
   rules_sup10[i] <- length(
@@ -219,7 +235,7 @@ iteracion_parametros <- purrr::map_dfr(
       }
     )
   }
-)
+)  
 
 # Number of rules found with a support level of 10%
 plot1 <- qplot(

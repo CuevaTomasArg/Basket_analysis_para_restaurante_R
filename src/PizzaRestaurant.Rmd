@@ -1,0 +1,152 @@
+---
+title: "Ranking 200 mejores nadadores por prueba"
+author: "Cueva Tomas"
+date: "2023-02-12"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(scipen = 999)
+```
+
+# Analisis exploratorio; ventas de pizzeria.
+
+Bienvenidos a este Rmarkdown en donde analizaremos las ventas de una pizzería durante el periodo del año 2015, con el fin de encontrar aquellos productos más consumidos por los clientes y poder visualizar el crecimiento o decrecimiento de los beneficios brutos de la pizzería mes a mes.
+
+## Inicialización de entorno
+
+Prepararemos las librerias y funciones correspondientes.
+
+### Instalación de librerías
+
+```{r install.librarys, echo=TRUE,warning=FALSE,message=FALSE}
+install.packages("arules")
+install.packages("arulesViz")
+install.packages("dplyr")
+install.packages("lubridate")
+install.packages("ggplot2")
+install.packages("gridExtra")
+install.packages("stringr")
+install.packages("tidyverse")
+install.packages("readxl")
+```
+
+### Importación de librerias
+
+```{r import.librarys, echo=TRUE,message=FALSE,warning=FALSE}
+library(arules)
+library(arulesViz)
+library(dplyr)
+library(lubridate)
+library(ggplot2)
+library(gridExtra)
+library(stringr)
+library(tidyverse)
+library(DT)
+library(readxl)
+```
+
+### Funciones utilizadas
+
+```{r functions, echo=FALSE,message=FALSE,warning=FALSE,}
+Apriori_algorithm <- function(rules,confidence_levels,transactions,support_levels,n){
+  for (i in 1:length(confidenceLevels)) {
+    rules[i] <- length(
+      apriori(
+        transactions, 
+        parameter = list(
+          minlen = 1,
+          sup = support_levels[n],
+          conf = confidence_levels[i],
+          target = "rules"
+        )
+      )
+    )
+  }
+  
+  return(rules)
+}
+
+numbers_rules <- function(confidence,rules,percentage,scale = NULL){
+  if( ! is.null(scale)){
+    plot <- qplot(
+      confidence,
+      rules,
+      geom = c("point", "line"), 
+      xlab = "Confidence level", ylab = "Number of rules found", 
+      main = cat("Apriori with a support level of ",percentage)
+    ) +
+      scale_y_continuous(breaks = scale) +
+      theme_bw()
+  }else{
+    plot <- qplot(
+      confidence,
+      rules,
+      geom = c("point", "line"), 
+      xlab = "Confidence level", ylab = "Number of rules found", 
+      main = cat("Apriori with a support level of ",percentage)
+    ) +
+      theme_bw()
+  }
+  
+  return(plot)
+}
+
+data_description <- function(data){
+  na <- sum(is.na(data))
+  if(na == 0){
+    description <- "El dataframe no tiene valores na."
+  }else{
+    decription <- "El dataframe SI TIENE valores na."
+    na.omit(data)
+    print("se eliminarion "+ na + " valores NA")
+  }
+  
+  description <-cat(description ,"\n", "Contiene " , nrow(data), " filas y ",ncol(data), " columnas","\n","Con las siguientes variables: ",names(data)) 
+  
+  return(description)
+}
+
+```
+
+## Limpieza y descripción de datos
+
+El dataset contiene datos y variables que para el proposito de este informe no son nesesariós. Por lo que procederemos a importar y examinar el dataset para posteriormente hacer una debida manipulación de datos con el fin de tener un dataset más limpio.
+
+### Lectura y descripción
+
+```{r read_and_description,echo=TRUE}
+data <- read_xlsx("C:/Users/tomas/OneDrive/Escritorio/R/ProyectoFinal_R_CuevaTomas/data/PizzaSales.xlsx")
+
+data_description(data)
+glimpse(data)
+```
+
+### Limpieza y manipulación de datos
+
+En este informe nos centraremos en los beneficios brutos y en las reglas de asociación de las pizzas vendidas, por lo que para la manipulación de datos será:
+
+-   **order_details_id, order_id y quantity:** Pasaran de ser datos tipo numeric/dbl a tipo integer para reducir la cantidad de memoria que ocupa el dataset.
+
+-   **pizza_id, order_time, pizza_size y pizza_ingredients:** Variables eliminadas ya que no son datos necesarios en nuestro caso.
+
+-   **pizza_category:** La volveremos de tipo factor.
+
+-   pizza_name: Al ser la variable más característica(ya que nos da un paronama de cual es el menú de pizzas) la convertiremos en una variable de tipo factor.
+
+```{r manipulated, echo=TRUE}
+data <- data %>% 
+  mutate(
+    order_details_id = as.integer(order_details_id),
+    order_id = as.integer(order_id),
+    quantity = as.integer(quantity),
+    pizza_id = NULL,
+    order_time = NULL,
+    pizza_size = NULL,
+    pizza_category = as.factor(pizza_category),
+    pizza_name = as.factor(pizza_name),
+    pizza_id = NULL,
+    pizza_ingredients = NULL
+  )
+```

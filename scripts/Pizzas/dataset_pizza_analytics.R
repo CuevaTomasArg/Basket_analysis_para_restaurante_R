@@ -30,14 +30,27 @@ print(data_description(data))
 
 manipulated <- data %>% 
   mutate(
-    pizza_id = as.factor(pizza_id),
-    order_time = str_split(as.character(order_time), " ", simplify = T),
-    order_time =  order_time[,2],
-    pizza_size = as.factor(pizza_size),
+    order_details_id = as.integer(order_details_id),
+    order_id = as.integer(order_id),
+    quantity = as.integer(quantity),
+    pizza_id = NULL,
+    order_time = NULL,
+    pizza_size = NULL,
     pizza_category = as.factor(pizza_category),
+    pizza_name = as.factor(pizza_name),
+    pizza_id = NULL,
+    pizza_ingredients = NULL
   )
+
+
 glimpse(manipulated)
 
 write.csv(manipulated, "PizzaData.csv")
 
 View(manipulated)
+
+pizza_types <- manipulated %>% 
+  select(pizza_name) %>% 
+  group_by(pizza_name) %>% 
+  unique()
+View(pizza_types)

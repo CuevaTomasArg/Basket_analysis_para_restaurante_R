@@ -1,5 +1,5 @@
 ---
-title: "Ranking 200 mejores nadadores por prueba"
+title: "Pizzería"
 author: "Cueva Tomas"
 date: "2023-02-12"
 output: html_document
@@ -10,26 +10,26 @@ knitr::opts_chunk$set(echo = TRUE)
 options(scipen = 999)
 ```
 
-# Analisis exploratorio; ventas de pizzeria.
+# Análisis exploratorio; ventas de pizzeria.
 
-Bienvenidos a este Rmarkdown en donde analizaremos las ventas de una pizzería durante el periodo del año 2015, con el fin de encontrar aquellos productos más consumidos por los clientes y poder visualizar el crecimiento o decrecimiento de los beneficios brutos de la pizzería mes a mes.
+Bienvenidos a este RMarkdown en donde analizaremos las ventas de una pizzería durante el periodo del año 2015, con el fin de encontrar aquellos productos más consumidos por los clientes y plantear reglas de asociación **las pizzas más elegidas entre los clientes.**
 
 ## Inicialización de entorno
 
-Prepararemos las librerias y funciones correspondientes.
+Prepararemos las librerías y funciones correspondientes.
 
 ### Instalación de librerías
 
 ```{r install.librarys, echo=TRUE,warning=FALSE,message=FALSE}
-install.packages("arules")
-install.packages("arulesViz")
-install.packages("dplyr")
-install.packages("lubridate")
-install.packages("ggplot2")
-install.packages("gridExtra")
-install.packages("stringr")
-install.packages("tidyverse")
-install.packages("readxl")
+#install.packages("arules")
+#install.packages("arulesViz")
+#install.packages("dplyr")
+#install.packages("lubridate")
+#install.packages("ggplot2")
+#install.packages("gridExtra")
+#install.packages("stringr")
+#install.packages("tidyverse")
+#install.packages("readxl")
 ```
 
 ### Importación de librerias
@@ -112,7 +112,7 @@ data_description <- function(data){
 
 ## Limpieza y descripción de datos
 
-El dataset contiene datos y variables que para el proposito de este informe no son nesesariós. Por lo que procederemos a importar y examinar el dataset para posteriormente hacer una debida manipulación de datos con el fin de tener un dataset más limpio.
+El dataset contiene datos y variables que para el propósito de este informe no son necesarios. Por lo que procederemos a importar y examinar el dataset para posteriormente hacer una debida manipulación de datos con el fin de tener un dataset más limpio.
 
 ### Lectura y descripción
 
@@ -127,16 +127,16 @@ glimpse(data)
 
 En este informe nos centraremos en los beneficios brutos y en las reglas de asociación de las pizzas vendidas, por lo que para la manipulación de datos será:
 
--   **order_details_id, order_id y quantity:** Pasaran de ser datos tipo numeric/dbl a tipo integer para reducir la cantidad de memoria que ocupa el dataset.
+-   **order_details_id, order_id y quantity:** Pasarán de ser datos tipo numeric/dbl a tipo integer para reducir la cantidad de memoria que ocupa el dataset.
 
 -   **pizza_id, order_time, pizza_size y pizza_ingredients:** Variables eliminadas ya que no son datos necesarios en nuestro caso.
 
 -   **pizza_category:** La volveremos de tipo factor.
 
--   pizza_name: Al ser la variable más característica(ya que nos da un paronama de cual es el menú de pizzas) la convertiremos en una variable de tipo factor.
+-   pizza_name: Al ser la variable más característica(ya que nos da un panorama de cuál es el menú de pizzas) la convertiremos en una variable de tipo factor.
 
 ```{r manipulated, echo=TRUE}
-data <- data %>% 
+data_m <- data %>% 
   mutate(
     order_details_id = as.integer(order_details_id),
     order_id = as.integer(order_id),
@@ -145,8 +145,269 @@ data <- data %>%
     order_time = NULL,
     pizza_size = NULL,
     pizza_category = as.factor(pizza_category),
+    pizza_name = str_sub(pizza_name,4,-6),
     pizza_name = as.factor(pizza_name),
     pizza_id = NULL,
     pizza_ingredients = NULL
   )
+```
+
+## Pizzas más vendidas
+
+Haremos una suma de la cantidad de veces que se pidió cada pizza para obtener un ranking de las más pedidas por los clientes.
+
+```{r best_pizzas, echo=TRUE}
+best_pizzas <- data_m %>% 
+  select(
+    pizza_name,quantity
+  ) %>% 
+  group_by(
+    pizza_name
+  ) %>% 
+  summarise(sum(quantity)) %>% 
+  arrange(desc(`sum(quantity)`)) %>% 
+  transmute(
+    pizza_name = factor(pizza_name,levels = pizza_name),
+    Sales.quantity = `sum(quantity)`
+  ) %>% 
+  mutate(
+    X = 1:length(pizza_name)
+  )
+
+best_pizzas %>% 
+  slice(1:100) %>% 
+  DT::datatable(
+    rownames = F,
+    filter = "top"
+  )
+```
+
+-   
+
+    ## Selección de pizzas
+
+    Debido a la gran variedad de pizzas que posemos, vamos a hacer una selección de las 10 pizzas más pedidas por los clientes.
+
+    ```{r pizza_seleccion, echo=TRUE}
+    best_pizzas <- best_pizzas %>% 
+      filter(X < 11)
+
+    select_pizzas <- data_m %>% 
+      mutate(
+        pizza_name = as.factor(pizza_name)
+      )%>% 
+      filter(
+        pizza_name == best_pizzas$pizza_name[1] | pizza_name == best_pizzas$pizza_name[2] | pizza_name == best_pizzas$pizza_name[3] | pizza_name == best_pizzas$pizza_name[4] | pizza_name == best_pizzas$pizza_name[5] | pizza_name == best_pizzas$pizza_name[6] | pizza_name == best_pizzas$pizza_name[7] | pizza_name == best_pizzas$pizza_name[8] | pizza_name == best_pizzas$pizza_name[9] | pizza_name == best_pizzas$pizza_name[10] 
+      )
+    ```
+
+    ## Ventas por periodos
+
+    No solo debemos tener en cuenta que pizzas son convenientes para realizar una buena estrategia de promoción, sino también el timing en el cual se va a ejecutar el plan. Esto lo examinaremos con la data de todas las ordenes del dataset inicial.
+
+    ### Ventar por mes
+
+    Haremos un graficos para analizar el crecimiento de ventas en el año 2015 de acuerdo a las pizzas seleccionadas.
+
+```{r sales_per_month, echo=TRUE}
+
+data_m %>% 
+  mutate(
+    Month = as.factor(month(order_date))
+  ) %>% 
+  group_by(Month) %>% 
+  summarise(
+    Transactions = n()
+  ) %>% 
+  ggplot(aes(x = Month, y = Transactions))+
+  geom_bar(stat = 'identity', fill = 'mistyrose1',show.legend = FALSE, color="black")+
+  ylab("Transacciones")+
+  xlab("Mes")+
+  ggtitle("Transacciones por Mes")+
+  theme_bw()
+```
+
+### Ventas por semana
+
+```{r sales_per_weekend,echo=TRUE}
+data_m %>% 
+  mutate(
+    DiaSemana = as.factor(weekdays(as.Date(order_date)))
+  ) %>% 
+  group_by(DiaSemana) %>% 
+  summarise(
+    Transactions = n()
+  ) %>% 
+  ggplot(aes(x = DiaSemana, y = Transactions))+
+  geom_bar(stat = "identity", fill = "mistyrose1", show.legend = FALSE, color = "black")+
+  geom_label(aes(label = Transactions))+
+  scale_x_discrete(
+    limits = c("lunes","martes","miércoles","jueves","viernes","sábado","domingo")
+  )+
+  ylab("Transacciones")+
+  xlab("Mes")+
+  ggtitle("Transacciones por DIa de la semana")+
+  theme_bw()
+```
+
+Como vemos, a nivel mensual no hay mucha diferenia en el nivel de ventas, sin embargo, si lo vemos semana a semana, podemos notar que los días vienres son aquellos en donde más flujo de clientes hay, por lo que este dato es interesante tenerlo en cuenta en el timing para lanzar las promociones.
+
+## Basket market analisis
+
+Hecho toda la transformacion y seleccion de la data, iniciaremos el analisis de reglas de asociación para examinar la organización de las posibles futuras promociones dentro de la pizzería.
+
+### Transformación y exportación de la data
+
+Transformaremos el dataset de las pizzas seleccionadas para realizar un dataframe el cual contenga por cada orden de compra unitaria, una lista de todas las pizzas pedidas en esa orden.
+
+```{r manipulation_basket, echo=TRUE,warning=FALSE,message=FALSE}
+data_orders <- select_pizzas %>%
+  select(order_details_id,order_id,order_date,pizza_name) %>% 
+  group_by(order_id,order_date) %>% 
+  summarise(glue::glue_collapse(glue::glue("{pizza_name}"), sep = ','))
+
+data_csv <- data_orders
+
+data_csv$order_id <- NULL
+data_csv$order_date <- NULL
+data_csv$`glue::glue_collapse(glue::glue("{pizza_name}"), sep = ",")` <- as.character(data_csv$`glue::glue_collapse(glue::glue("{pizza_name}"), sep = ",")`)
+
+write.csv(data_csv, "PizzasList.csv", quote = FALSE, row.names = TRUE)
+
+```
+
+### Lectura y limpieza de transacciones
+
+Leemos nuestra lista de ordenes para obtener transacciones en formato Basket
+
+```{r read_transaccions,echo=TRUE, message=FALSE,warning=FALSE}
+transacciones_pizzas <- read.transactions(
+  "PizzasList.csv", 
+  rm.duplicates = TRUE, 
+  format = "basket",
+  sep = ",", 
+  cols = 1
+)
+
+transacciones_pizzas@itemInfo$labels <- gsub("\"","",transacciones_pizzas@itemInfo$labels)
+
+```
+
+### Frecuencias
+
+Nos fijaremos la regularidad con la que los clientes compran cada pizza a partir de diferentes particularidades
+
+#### Frecuencia absoluta
+
+La frecuencia absoluta, es la cantidad total del ítem comprado, en un lapso de tiempo dado.
+
+```{r absolute_frequency, echo=TRUE}
+itemFrequencyPlot(
+  transacciones_pizzas,
+  topN = 10,
+  type = "absolute",
+  main = "Frecuencia Absoluta"
+)
+
+```
+
+#### Frecuencia relativa
+
+La regularidad de compras del producto en relación al total de produtos comprados.
+
+```{r relative_frequency,echo=TRUE}
+
+itemFrequencyPlot(
+  transacciones_pizzas, 
+  topN = 10, 
+  type = "relative",
+  ylab = "Frequency (relative)",
+  main="Frecuencia Relativa"
+)
+```
+
+## Algoritmo Apriori
+
+El algoritmo apriori va a ser aquel que nos va a buscar las reglas de asociación para nuestras transacciones
+
+### Niveles de soporte y confianza
+
+```{r sup&conf,echo=F, message=FALSE, warning=FALSE}
+supportLevels <- c(0.1, 0.05, 0.01, 0.005,0.0001)
+confidenceLevels <- c(0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.05)
+
+rules_sup10 <- integer(length = 10)
+rules_sup5 <- integer(length = 10)
+rules_sup1 <- integer(length = 10)
+rules_sup0.5 <- integer(length = 10)
+rules_sup0.1 <- integer(length = 10)
+
+rules_sup10 <- Apriori_algorithm(rules_sup10,confidenceLevels,transacciones_pizzas,supportLevels,1)
+rules_sup5 <- Apriori_algorithm(rules_sup5,confidenceLevels,transacciones_pizzas,supportLevels,2)
+rules_sup1 <- Apriori_algorithm(rules_sup1,confidenceLevels,transacciones_pizzas,supportLevels,3)
+rules_sup0.5 <- Apriori_algorithm(rules_sup0.5,confidenceLevels,transacciones_pizzas,supportLevels,4)
+rules_sup0.1 <- Apriori_algorithm(rules_sup0.1,confidenceLevels,transacciones_pizzas,supportLevels,5)
+
+
+```
+
+```{r num_rules,echo=FALSE, message=FALSE,warning=FALSE}
+num_rules <- data.frame(rules_sup10, rules_sup5, rules_sup1, rules_sup0.5, confidenceLevels)
+
+ggplot(data = num_rules, aes(x = confidenceLevels)) +
+  geom_line(aes(y = rules_sup10, colour = "Nivel de Soporte: 10%")) + 
+  geom_point(aes(y = rules_sup10, colour = "Nivel de Soporte: 10%")) +
+  geom_line(aes(y = rules_sup5, colour = "Nivel de Soporte: 5%")) +
+  geom_point(aes(y = rules_sup5, colour = "Nivel de Soporte: 5%")) +
+  geom_line(aes(y = rules_sup1, colour = "Nivel de Soporte: 1%")) + 
+  geom_point(aes(y = rules_sup1, colour = "Nivel de Soporte: 1%")) +
+  geom_line(aes(y = rules_sup0.5, colour = "Nivel de Soporte: 0.5%")) +
+  geom_point(aes(y = rules_sup0.5, colour = "Nivel de Soporte: 0.5%")) +
+  labs(
+    x = "Niveles de Confianza", 
+    y = "Cantidad de reglas encontradas", 
+    title = "Algoritmo Apriori algorithm para distintos niveles de soporte"
+  ) +
+  theme_bw() +
+  theme(legend.title = element_blank())
+
+```
+
+```{r apriori_alghoritm,echo=FALSE, message=FALSE,warning=FALSE}
+rules_sup1_conf10 <- apriori(
+  transacciones_pizzas, 
+  parameter = list(
+    minlen = 4,
+    sup = 0.001, 
+    conf = 0.2, 
+    target = "rules"
+  )
+)
+
+order <- c(rules_sup1_conf10[9],rules_sup1_conf10[22],rules_sup1_conf10[21],rules_sup1_conf10[38],rules_sup1_conf10[39],rules_sup1_conf10[23],rules_sup1_conf10[1],rules_sup1_conf10[62],rules_sup1_conf10[24],rules_sup1_conf10[42])
+
+
+inspectDT(rules_sup1_conf10)
+
+inspectDT(order)
+
+```
+
+```{r plot_inspect,echo=FALSE}
+
+plot(order, measure = c("support", "lift"), shading = "confidence",jitter = 0)
+```
+
+```{r asociation_graphic, echo=FALSE}
+plot(rules_sup1_conf10, method = "graph",max = 10)
+
+
+```
+
+```{r table_asociation, echo= FALSE}
+plot(
+  order, 
+  method = "paracoord"
+  )
+
 ```

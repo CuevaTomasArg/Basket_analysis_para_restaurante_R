@@ -12,7 +12,7 @@ options(scipen = 999)
 
 # Análisis exploratorio; ventas de pizzeria.
 
-Bienvenidos a este RMarkdown en donde analizaremos las ventas de una pizzería durante el periodo del año 2015, con el fin de encontrar aquellos productos más consumidos por los clientes y plantear reglas de asociación **las pizzas más elegidas entre los clientes.**
+Bienvenidos a este RMarkdown en donde analizaremos las ventas de una pizzería durante el periodo del año 2015, con el fin de encontrar aquellos productos más consumidos por los clientes y plantear reglas de asociación **con las pizzas más elegidas entre los clientes.**
 
 ## Inicialización de entorno
 
@@ -49,7 +49,7 @@ library(readxl)
 
 ### Funciones utilizadas
 
-```{r functions, echo=FALSE,message=FALSE,warning=FALSE,}
+```{r functions, echo=TRUE,message=FALSE,warning=FALSE,}
 Apriori_algorithm <- function(rules,confidence_levels,transactions,support_levels,n){
   for (i in 1:length(confidenceLevels)) {
     rules[i] <- length(
@@ -250,7 +250,7 @@ data_m %>%
   theme_bw()
 ```
 
-Como vemos, a nivel mensual no hay mucha diferenia en el nivel de ventas, sin embargo, si lo vemos semana a semana, podemos notar que los días vienres son aquellos en donde más flujo de clientes hay, por lo que este dato es interesante tenerlo en cuenta en el timing para lanzar las promociones.
+Como vemos, a nivel mensual no hay mucha diferenia en el nivel de ventas, sin embargo, si lo vemos semana a semana, podemos notar que los días viernes son aquellos en donde más flujo de clientes hay, por lo que este dato es interesante tenerlo en cuenta en el timing para lanzar las promociones.
 
 ## Basket market analisis
 
@@ -332,7 +332,7 @@ El algoritmo apriori va a ser aquel que nos va a buscar las reglas de asociació
 
 ### Niveles de soporte y confianza
 
-```{r sup&conf,echo=F, message=FALSE, warning=FALSE}
+```{r sup&conf,echo=FALSE, message=FALSE, warning=FALSE, results='hide',}
 supportLevels <- c(0.1, 0.05, 0.01, 0.005,0.0001)
 confidenceLevels <- c(0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.05)
 
@@ -384,25 +384,31 @@ rules_sup1_conf10 <- apriori(
   )
 )
 
-order <- c(rules_sup1_conf10[9],rules_sup1_conf10[22],rules_sup1_conf10[21],rules_sup1_conf10[38],rules_sup1_conf10[39],rules_sup1_conf10[23],rules_sup1_conf10[1],rules_sup1_conf10[62],rules_sup1_conf10[24],rules_sup1_conf10[42])
-
-
 inspectDT(rules_sup1_conf10)
+
+
+
+```
+
+Utilizando la tabla, vamos a acomodar la tabla de mayor a menor desde la variable "confidence" y seleccionamos aquellas relaciones con el nivel de confianza más alto y que supere el 50% de confianza.
+
+```{r rules_selection, echo=TRUE}
+
+order <- c(rules_sup1_conf10[9],rules_sup1_conf10[22],rules_sup1_conf10[21])
 
 inspectDT(order)
 
 ```
 
-```{r plot_inspect,echo=FALSE}
-
-plot(order, measure = c("support", "lift"), shading = "confidence",jitter = 0)
-```
+### Gráficos de asociaciónes
 
 ```{r asociation_graphic, echo=FALSE}
 plot(rules_sup1_conf10, method = "graph",max = 10)
 
 
 ```
+
+#### 
 
 ```{r table_asociation, echo= FALSE}
 plot(
@@ -411,3 +417,15 @@ plot(
   )
 
 ```
+
+#### Interpretación
+
+Las 3 reglas más importantes son:
+
+-   Los clientes que compran la southwest chicken pzza es muy probable que postariormente compren la Classic deluxe pizza.
+
+-   Los clientes que compran la ThaiChicken pizza es muy probable que compran la Spizy Italian pizza.
+
+-   También cuando compran la Southwast Chicken es muy probable que continuen con la Big Meat pizza.
+
+Tener en cuenta que a la hora de desarrollar una estrategia de promoción y/o recomendación, tambien debemos prestarle atención al timing, ya que no tendran el mismo nivel de impacto los diías viernes, en donde son los días con más flujo de clientes, que los domingos los cuales son los días donde menos ventas se dán.

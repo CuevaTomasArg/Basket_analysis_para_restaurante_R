@@ -1,17 +1,18 @@
-# Pizza restaurante sale's Basket Analysis
-----------------------
-In here repository, was developed a pizza restaurant sale's Basket analysis. This is my final project of Coderhouse's R course.
-## Project's Structure
----------------------
-The folders in this project have the next content:
-* data/: Here stay to dataset who use in the project
-* notes_&_notes/: In this folder have diferents algorithms to examples that i was can practice.
-* scripts/: The scripts to use in my RMarkdown's project final staying in this folder. That scripts i developed previus to develop the RMarldown
-* src/: Here stay the final project, in this folder can find the RMarkdown file to use for generate to HTML file. 
+# Pizza Restaurant Sales Basket Analysis
+-------------
+This repository contains the developed project for analyzing the sales basket of a pizza restaurant. It is my final project for the R course at Coderhouse.
 
-## Requeriments
---------------
-For execute to project be needs the nexts libraries:
+## Project Structure:
+------------------
+The project consists of the following folders:
+
+* data/: This folder contains the datasets used in the project.
+* notes_&_notes/: In this folder, you can find different algorithms and examples that I used for practice.
+* scripts/: The scripts used in my RMarkdown project are stored in this folder. These scripts were developed prior to the creation of the RMarkdown.
+* src/: The final project is located in this folder, which includes the RMarkdown file used to generate the HTML output.
+## Requirements:
+---------
+To execute the project, the following libraries are required:
 * arules
 * arulesViz
 * dplyr
@@ -22,3 +23,4 @@ For execute to project be needs the nexts libraries:
 * tidyverse
 * DT
 * readxl
+* Suggestion
